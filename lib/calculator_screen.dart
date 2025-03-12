@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'dart:math';
 import 'button.dart';
+import 'doc_screen.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({super.key});
@@ -22,9 +23,9 @@ class CalculatorScreenState extends State<CalculatorScreen> {
       } else if (value == "=") {
         try {
           if (input.contains("%")) {
-            result = calculatePercentage(input);  // Вычисление процентов
+            result = calculatePercentage(input);
           } else {
-            result = evalExpression(input);  // Вычисление выражения
+            result = evalExpression(input);
           }
         } catch (e) {
           result = "Ошибка";
@@ -32,19 +33,18 @@ class CalculatorScreenState extends State<CalculatorScreen> {
       } else if (value == "ln") {
         try {
           double num = double.parse(input);
-          result = log(num).toStringAsFixed(6);  // Натуральный логарифм
+          result = log(num).toStringAsFixed(6);
         } catch (e) {
           result = "Ошибка";
         }
       } else if (value == "π") {
-        input += pi.toString();  // Вставляем число Пи в выражение
+        input += pi.toString();
       } else {
         input += value;
       }
     });
   }
 
-  /// Функция вычисления выражения
   String evalExpression(String expression) {
     try {
       expression = expression.replaceAll('×', '*').replaceAll('÷', '/');
@@ -52,7 +52,7 @@ class CalculatorScreenState extends State<CalculatorScreen> {
       Parser parser = ShuntingYardParser();
       Expression exp = parser.parse(expression);
       ContextModel cm = ContextModel();
-      cm.bindVariable(Variable('π'), Number(pi));  // Добавляем переменную π
+      cm.bindVariable(Variable('π'), Number(pi));
       double eval = exp.evaluate(EvaluationType.REAL, cm);
 
       return eval.toString();
@@ -61,37 +61,29 @@ class CalculatorScreenState extends State<CalculatorScreen> {
     }
   }
 
-  /// Функция вычисления процентов (например, 100 + 30% = 130)
   String calculatePercentage(String expression) {
-    expression = expression.replaceAll(" ", ""); // Убираем пробелы
+    expression = expression.replaceAll(" ", "");
 
-    // Обновленное регулярное выражение для обработки процентов
     RegExp regex = RegExp(r"(\d+)([\+\-\*/])(\d+)%");
     Match? match = regex.firstMatch(expression);
 
     if (match != null) {
-      double base = double.parse(match.group(1)!); // Извлекаем первое число (например, 100)
-      String operation = match.group(2)!; // Извлекаем операцию (+ или -)
-      double percentage = double.parse(match.group(3)!) / 100; // Извлекаем число процента (например, 30 -> 0.30)
+      double base = double.parse(match.group(1)!);
+      String operation = match.group(2)!;
+      double percentage = double.parse(match.group(3)!) / 100;
 
       double result;
-
-      // В зависимости от операции выполняем соответствующие вычисления
       if (operation == "+") {
-        result = base + (base * percentage); // Добавляем процент
+        result = base + (base * percentage);
       } else if (operation == "-") {
-        result = base - (base * percentage); // Вычитаем процент
+        result = base - (base * percentage);
       } else {
-        return "Ошибка"; // Если операция неизвестна
+        return "Ошибка";
       }
-      if (operation == null){
-        // Просто выводим процент от числа
-        return (base * percentage).toString(); // Например: 30% => 0.30
-      }
-      return result.toString(); // Возвращаем результат
+      return result.toString();
     }
 
-    return "Ошибка"; // Если формат выражения неверный
+    return "Ошибка";
   }
 
   @override
@@ -101,27 +93,54 @@ class CalculatorScreenState extends State<CalculatorScreen> {
       body: Column(
         children: [
           Expanded(
-            flex: 2,
-            child: Container(
-              padding: EdgeInsets.all(20),
-              alignment: Alignment.bottomRight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    input,
-                    style: TextStyle(fontSize: 32, color: Color.fromARGB(255, 46, 58, 72)),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    result,
-                    style: TextStyle(fontSize: 24, color: Colors.grey),
-                  ),
-                ],
+          flex: 2,
+          child: Stack(
+            children: [
+              Container(
+                padding: EdgeInsets.all(20),
+                alignment: Alignment.bottomRight, // Фиксируем текст справа внизу
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal, // Чтобы длинные выражения скроллились
+                      reverse: true, // Сначала показываем правую сторону
+                      child: Text(
+                        input,
+                        style: TextStyle(fontSize: 32, color: Color.fromARGB(255, 46, 58, 72)),
+                        textAlign: TextAlign.right, // Выравниваем текст вправо
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      reverse: true,
+                      child: Text(
+                        result,
+                        style: TextStyle(fontSize: 24, color: Colors.grey),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              Positioned(
+                top: 40,
+                right: 20,
+                child: IconButton(
+                  icon: Icon(Icons.help_outline, size: 30, color: Colors.grey[700]),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => DocumentationScreen()),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+        ),
           Expanded(
             flex: 3,
             child: Container(
@@ -142,7 +161,6 @@ class CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  /// Создаём строку кнопок
   Widget buildRow(List<String> buttons) {
     return Expanded(
       child: Row(
@@ -151,8 +169,7 @@ class CalculatorScreenState extends State<CalculatorScreen> {
             .map((label) => CalculatorButton(
           label: label,
           onTap: () => onButtonClick(label),
-          isOperation: ["C", "ln", "%", "÷", "×", "-", "+", "=", "π"]
-              .contains(label),
+          isOperation: ["C", "ln", "%", "÷", "×", "-", "+", "=", "π"].contains(label),
         ))
             .toList(),
       ),
